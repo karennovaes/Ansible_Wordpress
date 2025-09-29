@@ -1,4 +1,4 @@
-# Ansible: Automatizando a Instalação do WordPress na AWS
+# Ansible: Automatizando a Instalação do WordPress
 
 Este repositório contém o código-fonte desenvolvido durante o curso "Ansible: Infraestrutura como código" da Alura. O objetivo do projeto é demonstrar como automatizar completamente o processo de provisionamento e configuração de um ambiente web para hospedar um site WordPress, utilizando Ansible para orquestrar todas as tarefas em servidores na AWS.
 
