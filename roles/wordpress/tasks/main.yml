@@ -1,0 +1,56 @@
+---
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: /srv/www
+        state: directory
+        owner: www-data
+        group: www-data
+      become: yes
+    - name: Unarchive a file that needs to be downloaded (added in 2.0)
+      ansible.builtin.unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /srv/www
+        remote_src: yes
+      become: yes
+    - name: Copy file with owner and permissions
+      ansible.builtin.template:
+        src: templates/wordpress.conf.j2
+        dest: /etc/apache2/sites-available/000-default.conf
+      become: yes
+      notify: 
+        - restart apache
+    - name: Copy file with owner and permissions
+      ansible.builtin.copy:
+        src: '{{ wp_dir }}/wp-config-sample.php'
+        dest: '{{ wp_dir }}/wp-config.php'
+        remote_src: yes
+        force: no
+      become: yes
+      notify: 
+        - restart apache
+    - name: Configure wp_config with database
+      ansible.builtin.replace:
+        path: '{{ wp_dir }}/wp-config.php'
+        regexp: '{{ item.regexp }}'
+        replace: '{{ item.replace }}'
+      with_items:
+      - { regexp: 'database_name_here', replace: '{{ wp_db_name }}'}
+      - { regexp: 'username_here', replace: '{{ wp_db_user }}'}
+      - { regexp: 'password_here', replace: '{{ wp_db_pass }}'}
+      - { regexp: 'localhost', replace: '{{ db_ip }}'}
+      become: yes
+    - name: Replace a localhost entry searching for a literal string to avoid escaping
+      ansible.builtin.lineinfile:
+          path: '{{ wp_dir }}/wp-config.php'
+          search_string: "{{ item.search_string }}"
+          line: "{{ item.line }}"
+      with_items:
+      - { search_string: "define( 'AUTH_KEY', 'put your unique phrase here' );", line: "define('AUTH_KEY','X2vNFU-^hG@br@4+7!;[G-;+73Dk5o2tV%;Dtc$0>}+$V*$fO7)?oJ088+.0?&i&');"}
+      - { search_string: "define( 'SECURE_AUTH_KEY','put your unique phrase here' );", line: "define('SECURE_AUTH_KEY',')0+%iu{Ox$6Gs8,rON[GNn{i7I:L|1RY{KiK-|wUrR,24)|vyt+I}PSARN2YZUR4');"}
+      - { search_string: "define( 'LOGGED_IN_KEY','put your unique phrase here' );", line: "define('LOGGED_IN_KEY','M?9_2SMZ6|d@rK|SVLB&qmb=q|J(^NI29|0OEE=^buQ~evOb(k@1?k%zu:k 1jP?');"}
+      - { search_string: "define( 'NONCE_KEY','put your unique phrase here' );", line: "define('NONCE_KEY','5g&V([vfzo,WIVw,DF/>7r{_Y;q<Ct.a)^NgrWR??XKvL|P]M6[?#r{+*=o!@wCR');"}
+      - { search_string: "define( 'AUTH_SALT','put your unique phrase here' );", line: "define('AUTH_SALT','Q{Y7PU5KXknZ3Q]!%h|81sFGa|~60Gf iR0,^q-!FSI$gAp6U5uVd%.di4ug+aKy');"}
+      - { search_string: "define( 'SECURE_AUTH_SALT','put your unique phrase here' );", line: "define('SECURE_AUTH_SALT', '>Iu=RS.qtlGf(MFt]k$MzDJ.r||4rn?NH|T>MQCoNTMn33C05?RD|(j+jUQT+Fm2');"}
+      - { search_string: "define( 'LOGGED_IN_SALT','put your unique phrase here' );", line: "define('LOGGED_IN_SALT','EGq2!p|#S1dd~X_V`*&&];R%8556Fi|2Z;{Gp=_*[q7t-pyp@tVe-Pta|wJt|!L');"}
+      - { search_string: "define( 'NONCE_SALT','put your unique phrase here' );", line: "define('NONCE_SALT','16FSKg ,|{x%+).vX5x^Oy.N[J2UxVvsC-p|c&Bc;p-.tmd/RiBEAPo)N%*}I?uO');"}
+      become: yes
